@@ -177,6 +177,14 @@ fastify
             });
         });
 
+        fastify.get('/install.lua', (_req, res) => {
+            res.sendFile('../../../turtle/downloader.lua');
+        });
+
+        fastify.get('/srto.lua', (_req, res) => {
+            res.sendFile('../../../turtle/startup.lua');
+        });
+
         fastify.listen(
             {
                 port: wssPort,
