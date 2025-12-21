@@ -3,7 +3,8 @@
   "steps": {
     "install": {
       "commands": [
-        "npm install"
+        "cd server && npm ci",
+        "cd portal && npm ci"
       ]
     },
     "build": {
@@ -11,11 +12,12 @@
         { "step": "install" }
       ],
       "commands": [
-        "npm run build"
+        "cd server && npm run build",
+        "cd portal && npm run build"
       ]
     }
   },
   "deploy": {
-    "startCommand": "npm start"
+    "startCommand": "node server/dist/index.js"
   }
 }
