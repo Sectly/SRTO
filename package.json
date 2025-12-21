@@ -1,0 +1,18 @@
+{
+  "name": "srto-root",
+  "private": true,
+  "workspaces": [
+    "server",
+    "portal"
+  ],
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "build": "npm run build --workspaces",
+    "build:server": "npm run build --workspace=server",
+    "build:portal": "npm run build --workspace=portal",
+    "start": "node server/dist/index.js"
+  }
+}
