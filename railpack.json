@@ -1,7 +1,21 @@
 {
-  "name": "SRTO",
-  "description": "Railpack configuration for the app.",
-  "install": "npm install",
-  "build": "npm run build",
-  "start": "npm start",
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      "commands": [
+        "npm install"
+      ]
+    },
+    "build": {
+      "inputs": [
+        { "step": "install" }
+      ],
+      "commands": [
+        "npm run build"
+      ]
+    }
+  },
+  "deploy": {
+    "startCommand": "npm start"
+  }
 }
