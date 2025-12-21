@@ -9,9 +9,13 @@ const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 5000;
-const WORLD_FILE = path.join(__dirname, '../data/world.json');
-const TURTLES_FILE = path.join(__dirname, '../data/turtles.json');
-const WAYPOINTS_FILE = path.join(__dirname, '../data/waypoints.json');
+const DATA_PATH = process.env.DATA_PATH
+  ? path.resolve(process.env.DATA_PATH)
+  : path.join(__dirname, '../data');
+
+const WORLD_FILE = path.join(DATA_PATH, 'world.json');
+const TURTLES_FILE = path.join(DATA_PATH, 'turtles.json');
+const WAYPOINTS_FILE = path.join(DATA_PATH, 'waypoints.json');
 
 const turtles = new Map();
 const browsers = new Map();
