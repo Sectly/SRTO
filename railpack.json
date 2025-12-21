@@ -1,38 +1,15 @@
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
-    "install-server": {
-      "commands": [
-        "cd server",
-        "npm ci"
-      ]
+    "install": {
+      "commands": ["npm install"]
     },
-    "install-portal": {
-      "commands": [
-        "cd portal",
-        "npm ci"
-      ]
-    },
-    "build-server": {
-      "inputs": [
-        { "step": "install-server" }
-      ],
-      "commands": [
-        "cd server",
-        "npm run build"
-      ]
-    },
-    "build-portal": {
-      "inputs": [
-        { "step": "install-portal" }
-      ],
-      "commands": [
-        "cd portal",
-        "npm run build"
-      ]
+    "build": {
+      "inputs": [{ "step": "install" }],
+      "commands": ["npm run build"]
     }
   },
   "deploy": {
-    "startCommand": "node server/dist/index.js"
+    "startCommand": "npm start"
   }
 }
