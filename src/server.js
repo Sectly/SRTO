@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 const DATA_PATH = process.env.DATA_PATH
   ? path.resolve(process.env.DATA_PATH)
   : path.join(__dirname, '../data');
