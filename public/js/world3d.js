@@ -830,7 +830,13 @@ class World3D {
       
       for (let i = index; i < end; i++) {
         const block = blocks[i];
-        this.addBlock(block.x, block.y, block.z, block.name, block.data || null);
+        
+        // Explicitly handle air blocks as removals
+        if (block.name === 'minecraft:air' || block.name === 'air') {
+          this.removeBlock(block.x, block.y, block.z);
+        } else {
+          this.addBlock(block.x, block.y, block.z, block.name, block.data || null);
+        }
       }
       
       index = end;

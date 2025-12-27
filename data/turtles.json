@@ -1,1 +1,1 @@
-
+[{"id":"12","label":"Bye Bye","position":{"y":0,"x":0,"z":-229},"direction":0,"fuel":8630,"maxFuel":20000,"turtleType":"normal","traits":{},"equipment":{},"peripherals":{"right":{"methods":["getName","getConfiguration"],"types":["chunky"]}}}]

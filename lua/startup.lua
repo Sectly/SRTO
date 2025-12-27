@@ -238,20 +238,27 @@ end
 
 local function inspectSurroundings()
     local blocks = {}
-    
-    local success, block = turtle.inspect()
-    if success then
-        local dx, dz = 0, 0
+    local dx, dz = 0, 0
         if direction == 0 then dz = -1
         elseif direction == 1 then dx = 1
         elseif direction == 2 then dz = 1
         elseif direction == 3 then dx = -1 end
+    local success, block = turtle.inspect()
+    if success then
         table.insert(blocks, {
             x = position.x + dx,
             y = position.y,
             z = position.z + dz,
             name = block.name,
             state = block.state
+        })
+    else
+        table.insert(blocks, {
+            x = position.x + dx,
+            y = position.y,
+            z = position.z + dz,
+            name = "minecraft:air",
+            state = {}
         })
     end
     
@@ -264,6 +271,14 @@ local function inspectSurroundings()
             name = block.name,
             state = block.state
         })
+    else 
+        table.insert(blocks, {
+            x = position.x,
+            y = position.y + 1,
+            z = position.z,
+            name = "minecraft:air",
+            state = {}
+        })
     end
     
     success, block = turtle.inspectDown()
@@ -275,8 +290,16 @@ local function inspectSurroundings()
             name = block.name,
             state = block.state
         })
+    else
+        table.insert(blocks, {
+            x = position.x,
+            y = position.y - 1,
+            z = position.z,
+            name = "minecraft:air",
+            state = {}
+        })
     end
-    
+    print("Inspected surroundings: " .. #blocks .. " blocks found")    
     return blocks
 end
 
@@ -413,6 +436,57 @@ local function moveDown()
     return false
 end
 
+local function mine()
+    if turtle.dig() then
+        local dx, dz = 0, 0
+        if direction == 0 then dz = -1
+        elseif direction == 1 then dx = 1
+        elseif direction == 2 then dz = 1
+        elseif direction == 3 then dx = -1 end
+        
+        local blocks = {{
+            x = position.x + dx,
+            y = position.y,
+            z = position.z + dz,
+            name = "minecraft:air",
+            state = {}
+        }}
+        sendWorldUpdate(blocks)
+        return true
+    end
+    return false
+end
+
+local function mineUp()
+    if turtle.digUp() then
+        local blocks = {{
+            x = position.x,
+            y = position.y + 1,
+            z = position.z,
+            name = "minecraft:air",
+            state = {}
+        }}
+        sendWorldUpdate(blocks)
+        return true
+    end
+    return false
+end
+
+local function mineDown()
+    if turtle.digDown() then
+        local blocks = {{
+            x = position.x,
+            y = position.y - 1,
+            z = position.z,
+            name = "minecraft:air",
+            state = {}
+        }}
+        sendWorldUpdate(blocks)
+        return true
+    end
+    return false
+end
+
 local function turnLeft()
     turtle.turnLeft()
     direction = (direction - 1) % 4
@@ -524,11 +598,11 @@ local function executeCommand(data)
     elseif command == "turnRight" then
         success = turnRight()
     elseif command == "dig" then
-        success = turtle.dig()
+        success = mine()
     elseif command == "digUp" then
-        success = turtle.digUp()
+        success = mineUp()
     elseif command == "digDown" then
-        success = turtle.digDown()
+        success = mineDown()
     elseif command == "place" then
         success = turtle.place()
     elseif command == "placeUp" then

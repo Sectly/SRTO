@@ -82,6 +82,20 @@
             <span id="turtle-status" class="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">Online</span>
             <span id="turtle-type" class="px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-400 hidden"></span>
             <span id="turtle-traits" class="text-xs text-gray-400 hidden"></span>
+            <div class="flex items-center gap-4 text-xs text-gray-400 ml-4">
+              <div class="flex items-center gap-2">
+                <span>Fuel:</span>
+                <span id="fuel-text" class="text-white">0</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>Pos:</span>
+                <span id="position-text" class="font-mono text-white">0, 0, 0</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>Dir:</span>
+                <span id="direction-text" class="text-white">North</span>
+              </div>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <span id="queue-count" class="text-xs text-yellow-400 hidden"></span>
@@ -175,29 +189,16 @@
                     <button onclick="sendCommand('detectAll')" class="action-btn bg-turtle-accent hover:bg-cyan-600 p-1.5 rounded text-xs">Detect</button>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h4 class="text-xs font-semibold mb-2 text-gray-400">Status</h4>
-                  <div class="space-y-2 text-xs">
-                    <div>
-                      <div class="flex justify-between mb-0.5">
-                        <span class="text-gray-400">Fuel</span>
-                        <span id="fuel-text">0</span>
-                      </div>
-                      <div class="w-full bg-turtle-dark rounded-full h-2">
-                        <div id="fuel-bar" class="bg-turtle-green h-2 rounded-full transition-all" style="width: 0%"></div>
-                      </div>
-                    </div>
-                    <div class="flex justify-between">
-                      <span class="text-gray-400">Position</span>
-                      <span id="position-text" class="font-mono text-xs">0, 0, 0</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span class="text-gray-400">Direction</span>
-                      <span id="direction-text">North</span>
-                    </div>
+                  <h4 class="text-xs font-semibold mb-2 text-gray-400">Mini-Scripts</h4>
+                  <div class="grid grid-cols-2 gap-1">
+                    <button onclick="runScript('tunnel')" class="action-btn bg-turtle-accent hover:bg-purple-600 p-1.5 rounded text-xs">Tunnel</button>
+                    <button onclick="runScript('quarry')" class="action-btn bg-turtle-accent hover:bg-purple-600 p-1.5 rounded text-xs">Quarry (Broken)</button>
                   </div>
                 </div>
+                
+
               </div>
             </div>
           </div>
@@ -379,6 +380,67 @@
         <button onclick="closeInventoryModal()" class="text-gray-400 hover:text-white text-xl">&times;</button>
       </div>
       <div id="inventory-modal-content" class="p-4 overflow-y-auto max-h-[60vh]">
+      </div>
+    </div>
+  </div>
+
+  <div id="quarry-ui" class="hidden absolute z-30 pointer-events-none">
+    <div class="relative">
+      <!-- North arrow -->
+      <div class="absolute left-1/2 -translate-x-1/2 -top-40 flex flex-col items-center pointer-events-auto">
+        <span class="text-white font-bold mb-1">N</span>
+        <input type="number" id="quarry-north" min="1" max="25" value="5" 
+          class="w-16 bg-turtle-card border border-turtle-accent rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-turtle-green">
+        <svg class="w-6 h-6 text-turtle-green mt-1" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+        </svg>
+      </div>
+      
+      <!-- South arrow -->
+      <div class="absolute left-1/2 -translate-x-1/2 top-40 flex flex-col-reverse items-center pointer-events-auto">
+        <span class="text-white font-bold mt-1">S</span>
+        <svg class="w-6 h-6 text-turtle-green mb-1 rotate-180" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+        </svg>
+        <input type="number" id="quarry-south" min="1" max="25" value="5" 
+          class="w-16 bg-turtle-card border border-turtle-accent rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-turtle-green">
+      </div>
+      
+      <!-- East arrow -->
+      <div class="absolute -right-40 top-1/2 -translate-y-1/2 flex items-center pointer-events-auto">
+        <svg class="w-6 h-6 text-turtle-green mr-1" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 12l-8-8v5H4v6h8v5z"/>
+        </svg>
+        <input type="number" id="quarry-east" min="1" max="25" value="5" 
+          class="w-16 bg-turtle-card border border-turtle-accent rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-turtle-green">
+        <span class="text-white font-bold ml-1">E</span>
+      </div>
+      
+      <!-- West arrow -->
+      <div class="absolute -left-40 top-1/2 -translate-y-1/2 flex items-center pointer-events-auto">
+        <span class="text-white font-bold mr-1">W</span>
+        <input type="number" id="quarry-west" min="1" max="25" value="5" 
+          class="w-16 bg-turtle-card border border-turtle-accent rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-turtle-green">
+        <svg class="w-6 h-6 text-turtle-green ml-1 rotate-180" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 12l-8-8v5H4v6h8v5z"/>
+        </svg>
+      </div>
+      
+      <!-- Depth input on top of turtle -->
+      <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 pointer-events-auto">
+        <div class="flex flex-col items-center bg-turtle-card/90 rounded px-3 py-2 border border-turtle-accent">
+          <span class="text-gray-400 text-xs mb-1">Depth</span>
+          <input type="number" id="quarry-depth" min="1" max="256" value="10" 
+            class="w-16 bg-turtle-dark border border-turtle-accent rounded px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-turtle-green">
+        </div>
+      </div>
+      
+      <!-- Start button -->
+      <div class="absolute bottom-2 right-2 pointer-events-auto">
+        <button onclick="startQuarry()" 
+          class="bg-turtle-green text-turtle-dark px-6 py-2 rounded font-semibold hover:bg-green-400 transition">
+          Start Quarry
+        </button>
       </div>
     </div>
   </div>

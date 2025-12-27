@@ -525,18 +525,25 @@ function updateTurtleStatus(turtle) {
 function updateFuelDisplay(turtle) {
   const fuel = turtle.fuel || 0;
   const maxFuel = turtle.maxFuel || 100000;
-  const percent = maxFuel > 0 ? (fuel / maxFuel) * 100 : 0;
   
-  document.getElementById('fuel-text').textContent = `${fuel} / ${maxFuel}`;
-  document.getElementById('fuel-bar').style.width = `${percent}%`;
+  const fuelText = document.getElementById('fuel-text');
+  if (fuelText) {
+    fuelText.textContent = `${fuel} / ${maxFuel}`;
+  }
   
+  // Update fuel bar if it exists (legacy support)
   const fuelBar = document.getElementById('fuel-bar');
-  if (percent < 10) {
-    fuelBar.className = 'bg-red-500 h-2 rounded-full transition-all';
-  } else if (percent < 25) {
-    fuelBar.className = 'bg-yellow-500 h-2 rounded-full transition-all';
-  } else {
-    fuelBar.className = 'bg-turtle-green h-2 rounded-full transition-all';
+  if (fuelBar) {
+    const percent = maxFuel > 0 ? (fuel / maxFuel) * 100 : 0;
+    fuelBar.style.width = `${percent}%`;
+    
+    if (percent < 10) {
+      fuelBar.className = 'bg-red-500 h-2 rounded-full transition-all';
+    } else if (percent < 25) {
+      fuelBar.className = 'bg-yellow-500 h-2 rounded-full transition-all';
+    } else {
+      fuelBar.className = 'bg-turtle-green h-2 rounded-full transition-all';
+    }
   }
 }
 
@@ -1177,7 +1184,7 @@ function openPeripheralModal() {
   const externalSection = document.getElementById('external-inv-section');
   
   const isCrafty = turtle && (
-    (turtle.traits && (turtle.traits.includes('crafty') || turtle.traits.includes('crafting'))) ||
+    (Array.isArray(turtle.traits) && (turtle.traits.includes('crafty') || turtle.traits.includes('crafting'))) ||
     (turtle.turtleType && turtle.turtleType.includes('craft'))
   );
   
@@ -1467,3 +1474,247 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+let activeScript = null;
+let scriptIntervals = {};
+let quarryActive = false;
+let quarryRunning = false;
+
+function runScript(scriptName) {
+  const buttonMap = {
+    'tunnel': document.querySelector('button[onclick="runScript(\'tunnel\')"]'),
+    'quarry': document.querySelector('button[onclick="runScript(\'quarry\')"]')
+  };
+  
+  const button = buttonMap[scriptName];
+  if (!button) return;
+  
+  if (scriptName === 'quarry') {
+    if (quarryRunning) {
+      quarryRunning = false;
+      sendCommand('clearQueue');
+      button.classList.remove('bg-red-600', 'hover:bg-red-500');
+      button.classList.add('bg-purple-600', 'hover:bg-purple-700');
+      button.textContent = 'Quarry';
+      addConsoleMessage('Quarry cancelled', 'info');
+      return;
+    }
+    
+    if (quarryActive) {
+      hideQuarryUI();
+      quarryActive = false;
+    } else {
+      showQuarryUI();
+      quarryActive = true;
+    }
+    return;
+  }
+  
+  if (activeScript === scriptName) {
+    stopScript(scriptName, button);
+  } else {
+    if (activeScript) {
+      const oldButton = buttonMap[activeScript];
+      stopScript(activeScript, oldButton);
+    }
+    startScript(scriptName, button);
+  }
+}
+
+function showQuarryUI() {
+  const turtle = turtles.get(selectedTurtleId);
+  if (!turtle || !world3d) return;
+  
+  const turtlePos = turtle.position;
+  world3d.camera.position.set(turtlePos.x, turtlePos.y + 15, turtlePos.z);
+  world3d.controls.target.set(turtlePos.x, turtlePos.y, turtlePos.z);
+  world3d.controls.update();
+  
+  const quarryUI = document.getElementById('quarry-ui');
+  const container = document.getElementById('world-container');
+  
+  setTimeout(() => {
+    const screenPos = getScreenPosition(turtlePos.x, turtlePos.y + 2, turtlePos.z);
+    
+    if (screenPos) {
+      const rect = container.getBoundingClientRect();
+      quarryUI.style.left = `${rect.left + screenPos.x}px`;
+      quarryUI.style.top = `${rect.top + screenPos.y}px`;
+      quarryUI.classList.remove('hidden');
+    }
+  }, 100);
+}
+
+function hideQuarryUI() {
+  const quarryUI = document.getElementById('quarry-ui');
+  quarryUI.classList.add('hidden');
+}
+
+function getScreenPosition(x, y, z) {
+  if (!world3d || !world3d.camera || !world3d.renderer) return null;
+  
+  const vector = new THREE.Vector3(x, y, z);
+  vector.project(world3d.camera);
+  
+  const widthHalf = world3d.renderer.domElement.width / 2;
+  const heightHalf = world3d.renderer.domElement.height / 2;
+  
+  return {
+    x: (vector.x * widthHalf) + widthHalf,
+    y: -(vector.y * heightHalf) + heightHalf
+  };
+}
+
+function startQuarry() {
+  const north = parseInt(document.getElementById('quarry-north').value) || 5;
+  const south = parseInt(document.getElementById('quarry-south').value) || 5;
+  const east = parseInt(document.getElementById('quarry-east').value) || 5;
+  const west = parseInt(document.getElementById('quarry-west').value) || 5;
+  const depth = parseInt(document.getElementById('quarry-depth').value) || 10;
+  
+  if (north < 1 || north > 25 || south < 1 || south > 25 || 
+      east < 1 || east > 25 || west < 1 || west > 25 || 
+      depth < 1 || depth > 256) {
+    addConsoleMessage('Invalid quarry dimensions', 'error');
+    return;
+  }
+  
+  hideQuarryUI();
+  quarryActive = false;
+  quarryRunning = true;
+  
+  const button = document.querySelector('button[onclick="runScript(\'quarry\')"]');
+  if (button) {
+    button.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+    button.classList.add('bg-red-600', 'hover:bg-red-500');
+    button.textContent = 'Stop Quarry';
+  }
+  
+  const totalNS = north + south + 1; 
+  const totalEW = east + west - 1;  
+  
+  executeQuarry(totalNS, totalEW, depth, north, west);
+}
+
+async function executeQuarry(rows, cols, depth, northOffset, westOffset) {
+  const turtle = turtles.get(selectedTurtleId);
+  if (!turtle) return;
+  
+  addConsoleMessage(`Starting quarry: ${rows}x${cols}x${depth} (N:${northOffset} W:${westOffset})`, 'info');
+  console.log('Quarry params:', { rows, cols, depth, northOffset, westOffset, currentDir: turtle.direction });
+  
+  const delay = (time) => new Promise(resolve => setTimeout(resolve, time || 1000));
+  
+  const dir = turtle.direction;
+  console.log('Current direction:', dir);
+  let turnToNorth = (0 - dir + 4) % 4;
+  console.log('Turns to north:', turnToNorth);
+  for (let i = 0; i < turnToNorth; i++) {
+    sendCommand('turnRight', [], true);
+  }
+  
+  console.log('Moving north:', northOffset, 'blocks');
+  for (let i = 0; i < northOffset; i++) {
+    sendCommand('dig', [], true);
+    await delay();
+    sendCommand('forward', [], true);
+    await delay();
+  }
+  
+  sendCommand('turnLeft', [], true); 
+  delay();
+  console.log('Moving west:', westOffset, 'blocks');
+  for (let i = 0; i < westOffset; i++) {
+    sendCommand('dig', [], true);
+    await delay();
+    sendCommand('forward', [], true);
+    await delay();
+  }
+
+  sendCommand('turnRight', [], true); 
+  await delay();
+  sendCommand('turnRight', [], true); 
+  await delay();
+
+  for (let d = 0; d < depth; d++) {
+    addConsoleMessage(`Starting depth layer ${d + 1} of ${depth}`, 'info');
+    for (let r = 0; r < rows-1; r++) {
+      for (let c = 0; c < cols+1; c++) {
+        sendCommand('dig', [], true);
+        await delay();
+        sendCommand('forward', [], true);
+        await delay();
+      }
+      if (r < rows - 1) {
+        if (r % 2 === 0) {
+          sendCommand('turnRight', [], true);
+          await delay();
+          sendCommand('dig', [], true);
+          await delay();
+          sendCommand('forward', [], true);
+          await delay();
+          sendCommand('turnRight', [], true);
+        } else {
+          sendCommand('turnLeft', [], true);
+          await delay();
+          sendCommand('dig', [], true);
+          await delay();
+          sendCommand('forward', [], true);
+          await delay();
+          sendCommand('turnLeft', [], true);
+        }
+      }
+    }
+    if (d < depth - 1) {
+      sendCommand('digDown', [], true);
+      await delay();
+      sendCommand('down', [], true);
+      await delay();
+      
+      sendCommand('turnRight', [], true);
+      await delay();
+      sendCommand('turnRight', [], true);
+      await delay();
+    }
+  }
+  
+  quarryRunning = false;
+  const button = document.querySelector('button[onclick="runScript(\'quarry\')"]');
+  if (button) {
+    button.classList.remove('bg-red-600', 'hover:bg-red-500');
+    button.classList.add('bg-purple-600', 'hover:bg-purple-700');
+    button.textContent = 'Quarry';
+  }
+  addConsoleMessage('Quarry complete!', 'success');
+}
+
+function startScript(scriptName, button) {
+  activeScript = scriptName;
+  
+  button.classList.remove('bg-turtle-accent', 'hover:bg-purple-600');
+  button.classList.add('bg-red-600', 'hover:bg-red-500');
+  button.textContent = 'Stop';
+  
+  if (scriptName === 'tunnel') {
+    scriptIntervals.tunnel = setInterval(async () => {
+      sendCommand('digUp', [], true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      sendCommand('dig', [], true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      sendCommand('forward', [], true);
+    }, 3000);
+  }
+}
+
+function stopScript(scriptName, button) {
+  if (scriptIntervals[scriptName]) {
+    clearInterval(scriptIntervals[scriptName]);
+    delete scriptIntervals[scriptName];
+  }
+  
+  activeScript = null;
+  
+  button.classList.remove('bg-red-600', 'hover:bg-red-500');
+  button.classList.add('bg-turtle-accent', 'hover:bg-purple-600');
+  button.textContent = scriptName.charAt(0).toUpperCase() + scriptName.slice(1);
+}
